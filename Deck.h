@@ -106,6 +106,7 @@ public:
     void printDeck();
     void printDeckStats();
     void pickCards(int);
+    void printGraph();
     
     bool checkFour(string);
     bool takeFromDeck(Deck&, Deck& , string, int&);
@@ -117,13 +118,18 @@ public:
     inline int inDeck(){ return cards.size(); }
 private:
     //PRIVATE MEMBER VARIABLES
-    const int default_size = 52;
+    const static int default_size = 52;
     const int m_goFishDeckSize   = 7;
     const int m_goFishMatch = 4;
     int m_size = 0;
     card m_cards = {};
     bool hasMadeDeck;
+    vector<pair<string, int>> m_weightedGraph[default_size];
+    void populateCardIndexes();
     
     //PRIVATE MEMBER FUNCTIONS
     bool findCard(Deck&, Deck&, string, string);
+    int addEdge(string vertex1, string vertex2, int weight);
+    void determineEdges();
+    map<string,int> m_cardIndexes;
 };

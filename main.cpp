@@ -1,5 +1,8 @@
 #include "Deck.h"
 #include "QuickEvent.h"
+#include "LinkedList.h"
+#include "AVL.h"
+#include <fstream>
 
 using namespace std;
 
@@ -17,31 +20,89 @@ void goFishMenu();
 //OTHER FUNCTIONS
 bool timedInteraction(deque<string>, string, int);
 int mainMenu();
+int hashFunc(const string key);
+
+//SCOREBOARD AND STAT TRACKING
+void showScoreboard(AVL tree);
+void welcomeMsg();
+void weightedGraph(Deck deck);
+
+//GLOBAL CONSTANTS
+AVL ScoreBoard;
+string userName{};
+const int DECK_SIZE = 52;
+const int SUITS = 4;
+const int CARD_VALUES = 13;
+    
 
 //MAIN
 int main(int argc, char** argv) {
+    fstream data_store;
     srand(time(0));
     
-    const int DECK_SIZE = 52;
-    const int SUITS = 4;
-    const int CARD_VALUES = 13;
-    
-    Deck GAME_DECK;
-    Deck Player;
-    Deck Enemy;
-    
     //GAME MENU
-    int gameChose = mainMenu();
-    if(gameChose == 1)
-        gameLoopSJ(GAME_DECK, Player, Enemy);
-    else if(gameChose == 2)
-        gameLoopGF(GAME_DECK, Player, Enemy);
-    else{
-        cout << "Exiting Arcade...";
-        exit(0);
+    int gameChose;
+    
+    while(gameChose != 5){
+        gameChose = mainMenu();
+        //CARD DECKS REINITIALIZED EVERY RUN
+        Deck GAME_DECK;
+        Deck Player;
+        Deck Enemy; 
+        
+        if(gameChose == 1)
+            gameLoopSJ(GAME_DECK, Player, Enemy);
+        else if(gameChose == 2)
+            gameLoopGF(GAME_DECK, Player, Enemy);
+        else if(gameChose == 3)
+            showScoreboard(ScoreBoard);
+        else if(gameChose == 4)
+            weightedGraph(GAME_DECK);
+        else{
+            cout << "Exiting Arcade...";
+            exit(0);
+        }
     }
     
     return 0;
+}
+
+void weightedGraph(Deck deck){
+    cout << "Welcome to the weighted graph section!\n";
+    
+    int input;
+    while(input != 2){
+        cout << "Type '1' to see the weighted graph statistics.\n"<<
+            "Type '2' to go back to the main menu.\n";
+        cin >> input;
+        if(input == 1){
+            deck.printGraph();
+        }
+    }
+}
+
+void showScoreboard(AVL tree){
+    cout << "Welcome to the scoreboard!\n";
+
+    int input;
+    while(input != 4){
+        cout << "Type '1' for the scoreboard.\n"<<
+            "Type '2' to see the scoreboard in Binary Tree Format(Rotated 90 degrees).\n" <<
+            "Type '3' to see all the nodes in the tree and their relationship.\n" << 
+            "Type '4' to go back to the main menu.\n";
+        cin >> input;
+        
+        if(input == 1){
+            tree.BalanceTree();
+            tree.PrintScores();
+        }
+        if(input == 2){
+            tree.PrintTree2D(10);
+        }
+        if(input == 3){
+            tree.PrintTreeData();
+        }
+    }
 }
 
 //FUNCTION LOGIC
@@ -154,6 +215,7 @@ void displayRulesSJ(){
 int slapJackMenu(){
     const string startStr = "START";
     cout << "\n\nWELCOME TO SLAP-JACK!\n\n";
+    welcomeMsg();
     
     //RULES
     cout << "To read the rules type 1, or type anything else to continue.";
@@ -246,8 +308,11 @@ void gameLoopGF(Deck& GAMEDECK, Deck& player, Deck& enemy){
             cin >> userDraw;
             
             //TAKE ALL CARDS REQUESTED FROM ENEMY DECK
-            if(player.takeFromDeck(player, enemy, userDraw, cardsTaken))
+            if(player.takeFromDeck(player, enemy, userDraw, cardsTaken)){
                 cout << "SUCCESSFULLY TOOK " << cardsTaken << " " << userDraw << "'s FROM THE ENEMY.";
+                
+                ScoreBoard.AddLeaf(stoi(userDraw) * cardsTaken);
+            }
             else{
                 cout << "Go Fish, Player!\n";
                 cout << "You picked up a " << GAMEDECK.cards.front();
@@ -292,7 +357,7 @@ void displayRulesGF(){
 void goFishMenu(){
     const string startStr = "START";
     cout << "\n\nWELCOME TO GO FISH!\n\n";
-    
+    welcomeMsg();
     //RULES
     cout << "To read the rules type 1, or type anything else to continue.";
     
@@ -342,6 +407,8 @@ bool timedInteraction(deque<string> pile, string card, int difficulty){
     
     //CHECK IF THE USER TYPED THE CORRECT WORD AND DID IT IN WITHIN THE TIME FRAME
     bool typedCorrect;
+    
+    //USER TYPED WRONG WORD
     if(input != test){
         cout << "\n\nYOU SPELLED THE WORD INCORRECTLY!\n";
         typedCorrect = false;
@@ -351,8 +418,12 @@ bool timedInteraction(deque<string> pile, string card, int difficulty){
     if((input == test && (float)ms/1000 <= inTime) && isJack){
         cout << "YOU SLAPPED THE JACK FIRST. IT TOOK YOU " << setprecision(2) << (float)ms/1000 << " seconds!\n";
         cout << pile.size() << " CARDS HAVE BEEN ADDED TO YOUR DECK.\n";
+        
+        //SCOREBOARD STUFF
+        ScoreBoard.AddLeaf(hashFunc(card)); //HASHING INTO AN AVL TREE
         return true;
     }
+    //IF THE USER TYPED THE CORRECT WORD, BUT THEY WERE TOO SLOW OR THE CARD WASN'T A JACK
     else{
         if(typedCorrect) 
             cout << "TOO SLOW! YOU TYPED THE WORD IN " << setprecision(2) << (float)ms/1000 << " seconds!\n";
@@ -365,13 +436,33 @@ bool timedInteraction(deque<string> pile, string card, int difficulty){
 }
 int mainMenu(){
     cout << "----WELCOME TO THE ARCADE----\n";
-    cout << "Type '1' for SLAPJACK\nType '2' for GO FISH.\nType anything else to Exit the Arcade.\n";
+    
+    cout << ".\nType '1' for SLAPJACK\nType '2' for GO FISH.\nType '3' for SCOREBOARD.\nType '4' for WEIGHTED GRAPHS.\nType anything else to Exit the Arcade.\n";
     
     string input;
     cin >> input;
     
-    if(input == "1" || input == "2")
+    if(input == "1" || input == "2" || input == "3" || input == "4")
         return stoi(input);
     
     return 0;
+}
+
+void welcomeMsg(){
+    cout << "Please enter your name: ";
+    cin  >> userName;
+    ScoreBoard.SetUserName(userName);
+}
+
+int hashFunc(const string key){
+    const std::vector<int> ABCtoNum = {2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 9, 9, 9, 9};
+    int hash = 1;
+    
+    int valOfLetter = 0;
+    for(const auto& letter : key){
+        valOfLetter += ABCtoNum[letter - 'A']; //CALCULATE WHAT VALUE THIS LETTER HAS BASED ON IT'S TELEPHONE NUMBER VALUE
+    }
+    hash = (12 + valOfLetter);
+
+    return hash;
 }

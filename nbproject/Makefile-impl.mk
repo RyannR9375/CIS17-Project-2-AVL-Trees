@@ -24,7 +24,7 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 
 
 # Project Name
-PROJECTNAME=Go-Fish---Slap-Jack-C---Project
+PROJECTNAME=CIS17-Project-2-AVL-Trees
 
 # Active Configuration
 DEFAULTCONF=Debug

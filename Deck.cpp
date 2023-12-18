@@ -237,3 +237,71 @@ bool Deck::findCard(Deck& to, Deck& from, string whatCard, string indx){
 
     return didFind;
 }
+
+void Deck::determineEdges(){
+    for(const auto cardOuter : cards){
+        string cardIn;
+        int diff;
+        for(const auto cardInner: cards){
+            deque<string>::iterator itrCardOuter = find(cards.begin(), cards.end(), cardOuter);
+            deque<string>::iterator itrCardInner = find(cards.begin(), cards.end(), cardInner);
+            
+            cardIn = cardInner;
+            
+            int greater;
+            int lesser;
+            
+            if(itrCardOuter > itrCardInner){
+                greater = distance(cards.begin(), itrCardOuter);
+                lesser  = distance(cards.begin(), itrCardInner);
+            }else{
+                greater = distance(cards.begin(), itrCardInner);
+                lesser  = distance(cards.begin(), itrCardOuter);
+            }
+            
+            diff = greater - lesser;
+            addEdge(cardOuter, cardIn, diff);
+        }
+    }
+}
+
+int Deck::addEdge(string vertex1, string vertex2, int weight){
+    m_weightedGraph[m_cardIndexes[vertex1]].emplace_back(vertex2, weight);
+    m_weightedGraph[m_cardIndexes[vertex2]].emplace_back(vertex1, weight);
+    
+    return weight;
+}
+
+void Deck::populateCardIndexes(){
+    int indx = 0;
+    for(const auto& card : cards){
+        m_cardIndexes.insert({card, indx});
+        indx++;
+    }
+}
+
+void Deck::printGraph(){
+    string v;
+    int w;
+    
+    map<string, int>::iterator itr;
+    
+    m_cardIndexes.clear();
+    setUpStandard();
+    populateCardIndexes();
+    determineEdges();
+ 
+    int u = 0;
+    for (itr = m_cardIndexes.begin(); itr != m_cardIndexes.end(); itr++) {
+        cout << "Node " << itr->first << " has the following neighbors:\n";
+ 
+        for (auto it=m_weightedGraph[u].begin(); it!=m_weightedGraph[u].end(); it++) {
+            v = it->first;
+            w = it->second;
+            cout << "\tNode " << v << " with edge weight " << w << ".\n";
+        }
+ 
+        cout << "\n";
+        u++;
+    }
+}
